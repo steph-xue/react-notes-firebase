@@ -1,12 +1,12 @@
-# React Notes Project (Local Databse)
+# React Notes Project (Firebase Database)
 
-The react notes project is a a dynamic web application built using the front-end JavaScript library, React. The web application's data saves directly on the computer's local database. The user can create new notes, select notes to view, write and update the note's title and body (in markdown), preview notes (in html), as well as delete notes. The web application contains a markdown editor and markdown to html converter, which allows the user to toggle between 'write' and 'preview' tabs to write content in markdown and preview the content in html.
+The react notes project is a a dynamic web application built using the front-end JavaScript library, React. The web application's data saves to Firebase's Cloud Firestore database. The user can create new notes, select notes to view, write and update the note's title and body (in markdown), preview notes (in html), as well as delete notes. The web application contains a markdown editor and markdown to html converter, which allows the user to toggle between 'write' and 'preview' tabs to write content in markdown and preview the content in html.
 &nbsp;
 
 ***Note:*** Project must be run on React version 17. The markdown editor and markdown to html converter (dependencies) are not supported on React version 18+.
 <br><br>
 
-Can access on: https://react-notes-local-sx.netlify.app/
+Can access on: https://react-notes-firebase-sx.netlify.app
 <br><br>
 
 
