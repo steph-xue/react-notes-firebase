@@ -1,63 +1,91 @@
 import React from "react"
-import Sidebar from "./components/Sidebar.jsx"
-import Editor from "./components/Editor.jsx"
+import Sidebar from "./components/Sidebar"
+import Editor from "./components/Editor"
 import Split from "react-split"
-import { nanoid } from "nanoid"
+import {
+    onSnapshot,
+    addDoc,
+    doc,
+    deleteDoc,
+    setDoc
+} from "firebase/firestore"
+import { notesCollection, db } from "./firebase"
 
 function App() {
 
     // Create state for notes objects array (includes id and body of writing)
     // Load notes from local storage (only once upon refresh) or set to empty array
-    const [notes, setNotes] = React.useState(
-        () => JSON.parse(localStorage.getItem("notes")) || []
-    );
+    const [notes, setNotes] = React.useState([]);
 
     // Create state for current note id to determine what note is currently selected
     // Set to the first note's id or an empty string if there are no notes
-    const [currentNoteId, setCurrentNoteId] = React.useState(
-        (notes[0]?.id) || ""
-    );
+    const [currentNoteId, setCurrentNoteId] = React.useState("");
     
+    const [tempNoteText, setTempNoteText] = React.useState("");
+
     // Find the current note object selected based on the current note id
     const currentNote = 
         notes.find(note => note.id === currentNoteId) || notes[0];
 
-    // Save notes to local storage whenever list of notes objects changes
+    const sortedNotes = notes.sort((a, b) => b.updatedAt - a.updatedAt);
+    
     React.useEffect(() => {
-        localStorage.setItem("notes", JSON.stringify(notes))
+        const unsubscribe = onSnapshot(notesCollection, function (snapshot) {
+            const notesArr = snapshot.docs.map(doc => ({
+                ...doc.data(),
+                id: doc.id
+            }));
+            setNotes(notesArr);
+        })
+        return unsubscribe;
+    }, []);
+    
+    React.useEffect(() => {
+        if (!currentNoteId) {
+            setCurrentNoteId(notes[0]?.id);
+        }
     }, [notes]);
+    
+    React.useEffect(() => {
+        if (currentNote) {
+            setTempNoteText(currentNote.body);
+        }
+    }, [currentNote]);
+    
+    React.useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (tempNoteText !== currentNote.body) {
+                updateNote(tempNoteText);
+            }
+        }, 500)
+        return () => clearTimeout(timeoutId);
+    }, [tempNoteText]);
 
     // Function to create a new note object and add it to the notes array
-    function createNewNote() {
+    async function createNewNote() {
         const newNote = {
-            id: nanoid(),
-            body: "# Type your markdown note's title here"
+            body: "# Type your markdown note's title here",
+            createdAt: Date.now(),
+            updatedAt: Date.now()
         };
-        setNotes(prevNotes => [newNote, ...prevNotes]);
-        setCurrentNoteId(newNote.id);
+        const newNoteRef = await addDoc(notesCollection, newNote);
+        setCurrentNoteId(newNoteRef.id);
     }
 
     // Function to update the body of the current note object
-    function updateNote(text) {
-        setNotes(oldNotes => {
-            const newArray = [];
-            for (let i = 0; i < oldNotes.length; i++) {
-                const oldNote = oldNotes[i];
-                if (oldNote.id === currentNoteId) {
-                    // Put the most recently-modified note at the top
-                    newArray.unshift({ ...oldNote, body: text });
-                } else {
-                    newArray.push(oldNote);
-                }
-            }
-            return newArray;
-        });
+    async function updateNote(text) {
+        const docRef = doc(db, "notes", currentNoteId);
+        await setDoc(
+            docRef, 
+            { body: text, updatedAt: Date.now() }, 
+            { merge: true }
+        );
     }
 
     // Function to delete a note object from the notes array
-    function deleteNote(event, noteId) {
-        event.stopPropagation();
-        setNotes(oldNotes => oldNotes.filter(note => note.id !== noteId));
+    async function deleteNote(noteId) {
+        const docRef = doc(db, "notes", noteId);
+        await deleteDoc(docRef);
     }
 
     // Return the main app component with the sidebar and editor components split horizontally in two sections
@@ -73,15 +101,15 @@ function App() {
                         className="split"
                     >
                         <Sidebar
-                            notes={notes}
+                            notes={sortedNotes}
                             currentNote={currentNote}
                             setCurrentNoteId={setCurrentNoteId}
                             newNote={createNewNote}
                             deleteNote={deleteNote}
                         />
                         <Editor
-                            currentNote={currentNote}
-                            updateNote={updateNote}
+                            tempNoteText={tempNoteText}
+                            setTempNoteText={setTempNoteText}
                         />
                     </Split>
                     :
