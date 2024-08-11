@@ -13,22 +13,28 @@ import { notesCollection, db } from "./firebase"
 
 function App() {
 
-    // Create state for notes objects array (includes id and body of writing)
-    // Load notes from local storage (only once upon refresh) or set to empty array
+    // Create state for notes objects array (includes body of writing and id from firebase database)
+    // Set initially to an empty array
     const [notes, setNotes] = React.useState([]);
 
     // Create state for current note id to determine what note is currently selected
-    // Set to the first note's id or an empty string if there are no notes
+    // Set initially to an empty string
     const [currentNoteId, setCurrentNoteId] = React.useState("");
     
+    // Create state for temporary note text to store the current note's body
+    // Set initially to an empty string
     const [tempNoteText, setTempNoteText] = React.useState("");
 
     // Find the current note object selected based on the current note id
     const currentNote = 
         notes.find(note => note.id === currentNoteId) || notes[0];
 
+    // Sort the notes objects array by the date it was last updated in reverse chronological order
     const sortedNotes = notes.sort((a, b) => b.updatedAt - a.updatedAt);
     
+    // Use onSnapshot to listen for changes in the notes collection in the firebase database
+    // Used to sync the notes array with the database (local changes will reflect the saved database)
+    // Need to return the unsubscribe function to prevent memory leaks
     React.useEffect(() => {
         const unsubscribe = onSnapshot(notesCollection, function (snapshot) {
             const notesArr = snapshot.docs.map(doc => ({
@@ -40,18 +46,22 @@ function App() {
         return unsubscribe;
     }, []);
     
+    // Use useEffect to set the current note id to the first note id in the notes array if there is no current note
     React.useEffect(() => {
         if (!currentNoteId) {
             setCurrentNoteId(notes[0]?.id);
         }
     }, [notes]);
     
+    // Use useEffect to set the temporary note text to the current note's body when the current note changes
     React.useEffect(() => {
         if (currentNote) {
             setTempNoteText(currentNote.body);
         }
     }, [currentNote]);
     
+    // Use useEffect to update the note in the firebase database when the temporary note text changes upon editing
+    // Set a timeout to prevent the note from updating and connecting to the database too frequently (will override previous connection)
     React.useEffect(() => {
         const timeoutId = setTimeout(() => {
             if (tempNoteText !== currentNote.body) {
@@ -61,7 +71,8 @@ function App() {
         return () => clearTimeout(timeoutId);
     }, [tempNoteText]);
 
-    // Function to create a new note object and add it to the notes array
+    // Function to create a new note object and add it to firebase database
+    // Also sets the date/time it was created and last updated
     async function createNewNote() {
         const newNote = {
             body: "# Type your markdown note's title here",
@@ -72,7 +83,7 @@ function App() {
         setCurrentNoteId(newNoteRef.id);
     }
 
-    // Function to update the body of the current note object
+    // Function to update the firebase database with the updated note text (tempNoteText as its being updated)
     async function updateNote(text) {
         const docRef = doc(db, "notes", currentNoteId);
         await setDoc(
@@ -82,7 +93,7 @@ function App() {
         );
     }
 
-    // Function to delete a note object from the notes array
+    // Function to delete a note object from the firebase database
     async function deleteNote(noteId) {
         const docRef = doc(db, "notes", noteId);
         await deleteDoc(docRef);
@@ -122,7 +133,6 @@ function App() {
                             Create one now
                 </button>
                     </div>
-
             }
         </main>
     );
