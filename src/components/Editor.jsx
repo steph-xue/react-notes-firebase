@@ -2,7 +2,7 @@ import React from "react"
 import ReactMde from "react-mde"
 import Showdown from "showdown"
 
-function Editor({ currentNote, updateNote }) {
+function Editor({ tempNoteText, setTempNoteText }) {
 
     // Create state for selected tab (write or preview) in the markdown editor
     const [selectedTab, setSelectedTab] = React.useState("write");
@@ -18,8 +18,8 @@ function Editor({ currentNote, updateNote }) {
     return (
         <section className="pane editor">
             <ReactMde
-                value={currentNote.body}
-                onChange={updateNote}
+                value={tempNoteText}
+                onChange={setTempNoteText}
                 selectedTab={selectedTab}
                 onTabChange={setSelectedTab}
                 generateMarkdownPreview={(markdown) =>
