@@ -70,6 +70,10 @@ The user can delete notes by click on the trash icon that appears while hovering
     - A React markdown editor
   - Showdown
     - A Javascript markdown to html converter
+      
+## Database
+  - Firebase:
+    - A flexible, scalable cloud database made by Google that allows you to store, sync, and query data for your mobile, web, and server applications at a global scale
 
 ## How to Run Locally
 - Install the latest version of node.js (JavaScript runtime server)
